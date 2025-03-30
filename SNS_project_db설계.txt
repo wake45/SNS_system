@@ -1,0 +1,47 @@
+사용자 User 
+
+{
+  "_id": ObjectId,
+  "username": "사용자이름",
+  "email": "이메일주소",
+  "password": "암호화된비밀번호",
+  "profile": {
+    "name": "이름",
+    "bio": "자기소개",
+    "profile_picture": "프로필사진URL"
+  },
+  "followers": [ObjectId],  // 팔로워들의 사용자 ID 배열
+  "following": [ObjectId]   // 팔로잉하는 사용자 ID 배열
+}
+
+게시물 Posts
+
+{
+  "_id": ObjectId,
+  "author_id": ObjectId,     // 작성자 ID
+  "content": "게시물 내용",
+  "image_url": "이미지URL",
+  "created_at": ISODate,
+  "likes": [ObjectId],       // 좋아요를 누른 사용자 ID 배열
+  "comments": [
+    {
+      "commenter_id": ObjectId,
+      "comment": "댓글 내용",
+      "commented_at": ISODate
+    }
+  ]
+}
+
+채팅 Chats
+
+{
+  "_id": ObjectId,
+  "participants": [ObjectId, ObjectId],  // 두 명의 사용자 ID
+  "messages": [
+    {
+      "sender_id": ObjectId,
+      "message": "메시지 내용",
+      "sent_at": ISODate
+    }
+  ]
+}
