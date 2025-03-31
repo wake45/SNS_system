@@ -2,7 +2,7 @@
 
 {
   "_id": ObjectId,
-  "username": "사용자이름",
+  "name": "사용자이름",
   "email": "이메일주소",
   "password": "암호화된비밀번호",
   "profile": {
