@@ -9,10 +9,10 @@ export class Profile {
   @Prop()
   name: string;
 
-  @Prop({ default: ['안녕하세요.']}) //자기소개
+  @Prop({ default: '안녕하세요.' }) //자기소개
   bio?: string;
 
-  @Prop()
+  @Prop({ default: '/public/default_profile.png' })
   profile_picture?: string;
 }
 

@@ -10,12 +10,12 @@ export class ProfileDto {
   
 export class UserResponseDto {
   constructor(
-    public email?: string,
-    public username?: string,
-    public profile?: ProfileDto,
+    public email: string,
+    public username: string,
+    public profile: ProfileDto,
     public followers: any[] = [],
     public following: any[] = [],
-    public _id?: Types.ObjectId,
+    public _id: Types.ObjectId,
   ) {}
 }
 

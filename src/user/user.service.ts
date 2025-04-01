@@ -20,4 +20,17 @@ export class UserService {
     .populate('following')
     .exec();
   }
+
+  async updateProfilePicture(userId: string, imageUrl: string): Promise<User | null> {
+    return this.userModel.findByIdAndUpdate(
+        userId,
+        { 'profile.profile_picture': imageUrl },
+        { new: true }
+    );
+  }
+    
+  // 사용자 ID 배열로 사용자 정보 조회
+  async getUsersByIds(userIds: string[]): Promise<User[]> {
+    return this.userModel.find({ _id: { $in: userIds } }).select('username').exec();
+  }
 }
