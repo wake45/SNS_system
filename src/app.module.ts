@@ -6,6 +6,8 @@ import { join } from 'path';
 import { AuthModule } from './user/auth.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { FeedController } from './feed/feed.controller';
+import { FeedModule } from './feed/feed.module';
 
 @Module({
   imports: [
@@ -22,6 +24,7 @@ import { AppService } from './app.service';
       inject: [ConfigService],
     }),
     AuthModule,
+    FeedModule,
   ],
   controllers: [AppController],
   providers: [AppService],

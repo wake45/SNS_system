@@ -1,17 +1,19 @@
-import { Controller, Post, Body, Res, UnauthorizedException, Get, HttpStatus, HttpException, Param, UseInterceptors, UploadedFile, NotFoundException } from '@nestjs/common';
+import { Controller, Post, Body, Res, UseInterceptors, UploadedFile, Req, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { join } from 'path';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import * as fs from 'fs';
-import { User } from './schemas/user.schema';
+import { UserDocument } from './schemas/user.schema';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('user')
 export class UserController {
     constructor(private userService: UserService) {}
 
     @Post('upload')
+    @UseGuards(JwtAuthGuard)
     @UseInterceptors(FileInterceptor('profileImage', {
         storage: diskStorage({
         destination: (req, file, cb) => {
@@ -39,20 +41,23 @@ export class UserController {
     }))
     async uploadProfileImage(
         @UploadedFile() file: Express.Multer.File,
-        @Body('userId') userId: string,
-        @Res() res: Response
+        @Req() req: Request,
+        @Res() res: Response,
     ) {
+        const user = req.user as UserDocument;
+        console.log(user._id.toString());
+
         if (!file) {
-        return res.status(400).json({ message: '파일이 업로드되지 않았습니다.' });
+            return res.status(400).json({ message: '파일이 업로드되지 않았습니다.' });
         }
 
         const imageUrl = `/public/uploads/${file.filename}`;
 
         try {
-        await this.userService.updateProfilePicture(userId, imageUrl);
-        return res.status(200).json({ imageUrl });
+            await this.userService.updateProfilePicture(user._id.toString(), imageUrl);
+            return res.status(200).json({ imageUrl });
         } catch (error) {
-        return res.status(500).json({ message: '프로필 이미지 업데이트에 실패했습니다.', error: error.message });
+            return res.status(500).json({ message: '프로필 이미지 업데이트에 실패했습니다.', error: error.message });
         }
     }
 

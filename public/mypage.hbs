@@ -55,7 +55,7 @@
     <!-- 글쓰기 / 팔로우 버튼 -->
     <div class="mt-6">
       <button id="writeOrFollowButton" class="w-full py-3 bg-gray-300 rounded-md hover:bg-gray-400" onclick="{{#if isMyPage}}writePost(){{else}}handleFollow(){{/if}}">
-        {{#if isMyPage}}글쓰기{{else}}팔로우하기{{/if}}
+        {{#if isMyPage}}피드작성{{else}}팔로우하기{{/if}}
       </button>
     </div>
   </div>
@@ -98,7 +98,7 @@
     // 프로필 이미지 변경
     function handleFileChange(event) {
       const file = event.target.files[0];
-      const userId = document.getElementById('userId').value; // 사용자 ID를 가져옵니다.
+      const userId = document.getElementById('userId').value; // 사용자 ID
 
       if (file) {
         if (!file.type.startsWith('image/')) {
@@ -114,8 +114,7 @@
 
         // 서버로 이미지와 사용자 ID를 함께 업로드 요청
         const formData = new FormData();
-        formData.append('profileImage', file);
-        formData.append('userId', userId);
+        formData.append('profileImage', file);        
 
         fetch('/user/upload', {
           method: 'POST',
@@ -195,7 +194,8 @@
     }
 
     function writePost() {
-      alert("글쓰기 페이지로 이동");
+      const userId = document.getElementById('userId').value;
+      window.location.href = `/create-feed.html?user_id=${userId}`;
     }
 
     function handleFollow() {

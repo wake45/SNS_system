@@ -12,7 +12,7 @@ import { UserController } from './user.controller';
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
-    PassportModule,
+    PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'defaultSecretKey',
       signOptions: { expiresIn: '1h' },
@@ -20,6 +20,6 @@ import { UserController } from './user.controller';
   ],
   controllers: [AuthController, UserController],
   providers: [AuthService, UserService, JwtStrategy],
-  exports: [AuthService, UserService, MongooseModule],
+  exports: [AuthService, UserService, MongooseModule, PassportModule],
 })
 export class AuthModule {}

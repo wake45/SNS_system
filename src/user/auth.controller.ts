@@ -1,11 +1,12 @@
-import { Controller, Post, Body, Res, UnauthorizedException, Get, HttpStatus, HttpException, Param } from '@nestjs/common';
+import { Controller, Post, Body, Res, UnauthorizedException, HttpStatus, HttpException, Session } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { Response } from 'express';
+import { JwtService } from '@nestjs/jwt';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService, private jwtService: JwtService) {}
 
   @Post('register')
   async register(@Body() createUserDto: CreateUserDto, @Res() res: Response) {
@@ -21,12 +22,14 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(@Body() createUserDto: CreateUserDto, @Res() res: Response) {
+  async login(@Body() createUserDto: CreateUserDto, @Res() res: Response, @Session() session: Record<string, any>) {
     console.log(createUserDto.email);
     const result = await this.authService.validateUser(createUserDto);
     console.log(result);
 
     if (result?.accessToken && result?.user) {
+      const payload = { sub: result.user._id.toString(), email: result.user.email };
+      const accessToken = this.jwtService.sign(payload);
       res.cookie('access_token', result.accessToken, { httpOnly: true });
 
       // 현재 로그인한 사용자가 본인인지 확인
