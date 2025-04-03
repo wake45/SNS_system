@@ -18,8 +18,8 @@ export class FeedService {
     return newFeed.save();
   }
 
-  async findAll(): Promise<Feed[]> {
-    return this.feedModel.find().exec();
+  async findFeedsByUserId(userId: string): Promise<Feed[]> {
+    return this.feedModel.find({ author_id: userId }).sort({ created_at: -1 }).exec();
   }
 
   async addComment(feedId: string, addCommentDto: AddCommentDto, commenterId: string): Promise<Feed | null> {
@@ -38,11 +38,17 @@ export class FeedService {
     ).exec();
   }
 
-  async likeFeed(feedId: string, userId: string): Promise<Feed | null> {
-    return this.feedModel.findByIdAndUpdate(
-      feedId,
-      { $addToSet: { likes: new Types.ObjectId(userId) } },
-      { new: true },
-    ).exec();
+  async findFeedById(id: string): Promise<Feed | null> {
+    return this.feedModel.findById(id).exec();
+  }  
+
+  async addLikeToFeed(feedId: string, userId: string): Promise<void> {
+    await this.feedModel.findByIdAndUpdate(feedId, {
+      $push: { likes: userId },
+    }).exec();
+  }
+
+  async deleteFeed(id: string): Promise<void> {
+    await this.feedModel.findByIdAndDelete(id).exec();
   }
 }

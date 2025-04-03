@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Req, UseInterceptors, UploadedFile, Res } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Req, UseInterceptors, UploadedFile, Res, Delete, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { FeedService } from './feed.service';
 import { CreateFeedDto } from './dto/create-feed.dto';
 import { AddCommentDto } from './dto/add-comment.dto';
@@ -8,6 +8,8 @@ import { extname } from 'path';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/user/jwt-auth.guard';
 import { User, UserDocument } from 'src/user/schemas/user.schema';
+import { plainToInstance } from 'class-transformer';
+import { FeedDto } from './dto/feed.dto';
 
 @Controller('feed')
 export class FeedController {
@@ -53,9 +55,13 @@ export class FeedController {
     }
   }
 
-  @Get()
-  async findAll() {
-    return this.feedService.findAll();
+  @UseGuards(JwtAuthGuard)
+  @Get('user')
+  async getUserFeeds(@Req() req: Request): Promise<FeedDto[]> {
+    const user = req.user as UserDocument;
+    const feeds = await this.feedService.findFeedsByUserId(user._id.toString());
+    console.log(feeds);
+    return plainToInstance(FeedDto, feeds, { excludeExtraneousValues: true });
   }
 
   @UseGuards(JwtAuthGuard)
@@ -67,8 +73,41 @@ export class FeedController {
 
   @UseGuards(JwtAuthGuard)
   @Post(':id/like')
-  async likeFeed(@Param('id') id: string, @Req() req) {
-    const userId = req.user.userId;
-    return this.feedService.likeFeed(id, userId);
+  async likeFeed(@Param('id') id: string, @Req() req: Request, @Res() res: Response) {
+    const user = req.user as UserDocument;
+    const userId = user._id.toString();
+  
+    const feed = await this.feedService.findFeedById(id);
+    if (!feed) {
+      return res.status(404).json({ message: '피드를 찾을 수 없습니다.' });
+    }
+  
+    if (feed.likes.includes(user._id)) {
+      return res.status(400).json({ message: '이미 좋아요를 눌렀습니다.' });
+    }
+  
+    await this.feedService.addLikeToFeed(id, userId);
+    return res.status(200).json({ message: '좋아요가 추가되었습니다.' });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id')
+  async deleteFeed(@Param('id') id: string, @Req() req) {
+    const user = req.user as UserDocument;
+    const feed = await this.feedService.findFeedById(id);
+
+    if (!feed) {
+      throw new NotFoundException('피드를 찾을 수 없습니다.');
+    }
+
+    console.log(user._id);
+    console.log(feed.author_id);
+
+    if (feed.author_id.toString() !== user._id.toString()) {
+      throw new ForbiddenException('이 피드를 삭제할 권한이 없습니다.');
+    }
+
+    await this.feedService.deleteFeed(id);
+    return { message: '피드가 성공적으로 삭제되었습니다.' };
   }
 }

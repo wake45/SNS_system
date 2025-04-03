@@ -21,8 +21,7 @@
         />
         {{#if isMyPage}}
           <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="handleFileChange(event)">
-        {{/if}}
-        <input type="hidden" id="userId" value="{{user._id}}">
+        {{/if}}        
         <div>
           <h2 class="text-xl font-semibold">{{user.profile.name}}</h2>
           <p class="text-gray-600">{{user.profile.bio}}</p>
@@ -47,9 +46,9 @@
       </div>
     </div>
 
-    <!-- 피드 섹션 -->
-    <div class="grid grid-cols-3 gap-4 mt-6">
-      <!-- 피드 항목은 동적으로 생성될 수 있습니다 -->
+    <!-- 피드를 표시할 컨테이너 -->
+    <div id="feedContainer" class="grid grid-cols-3 gap-4 mt-6">
+      <!-- 피드 항목들이 이곳에 동적으로 추가됩니다 -->
     </div>
 
     <!-- 글쓰기 / 팔로우 버튼 -->
@@ -77,7 +76,39 @@
     </div>
   </div>
 
+  <!-- 피드 상세 모달 -->
+  <div id="detailModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-[500px] shadow-lg rounded-md bg-white">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold text-gray-900">피드</h3>
+        <button id="deleteFeedButton" class="bg-gray-300 px-3 py-1 rounded shadow" onclick="deleteFeed()">삭제</button>
+      </div>
+      <img id="detailModalImage" src="" alt="상세 이미지" class="w-full h-64 object-cover rounded mb-4" />
+      <div class="flex justify-around mb-2">
+        <div class="flex flex-col items-center">
+          <button class="bg-blue-200 px-4 py-1 rounded-full mb-1" onclick="handleLike()" id="likeButton">좋아요</button>
+          <span id="likeCount" class="text-sm text-gray-700"></span>
+        </div>
+        <div class="flex flex-col items-center">
+          <button class="bg-blue-200 px-4 py-1 rounded-full mb-1" disabled>댓글</button>
+          <span id="commentCount" class="text-sm text-gray-700"></span>
+        </div>
+      </div>
+      <div class="text-sm text-gray-600 mt-2">
+        <span id="createdAt" class="block text-center"></span>
+      </div>
+      <p id="feedContent" class="mt-4 text-gray-800 text-center"></p>
+      <div class="mt-4">
+        <button id="detailCloseModal" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700">
+          닫기
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
+    let loadedFeeds = []; // 피드 데이터
+
     // 모달 요소 가져오기
     const modal = document.getElementById('modal');
     const modalTitle = document.getElementById('modalTitle');
@@ -89,6 +120,74 @@
       modal.style.display = 'none';
     }
 
+    document.addEventListener('DOMContentLoaded', function () {
+      fetch('/feed/user')
+        .then(response => response.json())
+        .then(feeds => {
+          loadedFeeds = feeds; // 전역에 저장
+
+          const feedContainer = document.getElementById('feedContainer');
+          feeds.forEach(feed => {
+            const feedItem = document.createElement('div');
+            feedItem.className = 'relative';
+            feedItem.innerHTML = `
+              <img src="${feed.image_url}" alt="피드 이미지" class="w-full h-48 object-cover cursor-pointer" onclick="showDetail('${feed.id}')">
+            `;
+            feedContainer.appendChild(feedItem);
+          });
+        })
+        .catch(error => console.error('피드를 불러오는 중 오류 발생:', error));
+    });
+
+    function deleteFeed(feedId) {
+      fetch(`/feed/${feedId}`, {
+        method: 'DELETE',
+        credentials: 'same-origin'
+      })
+      .then(response => {
+        if (response.ok) {
+          alert('피드가 성공적으로 삭제되었습니다.');
+          location.reload(); // 페이지 새로고침
+        } else {
+          response.json().then(data => {
+            alert(data.message || '피드 삭제 중 오류가 발생했습니다.');
+          });
+        }
+      })
+      .catch(error => {
+        console.error('삭제 요청 중 오류 발생:', error);
+        alert('피드 삭제 중 오류가 발생했습니다.');
+      });
+    };
+
+    function showDetail(feedId) {
+      const feed = loadedFeeds.find(f => f.id === feedId);
+      if (!feed) {
+        console.error('피드를 찾을 수 없습니다:', feedId);
+        return;
+      }
+
+      document.getElementById('detailModalImage').src = feed.image_url;
+      document.getElementById('feedContent').textContent = feed.content;
+      document.getElementById('createdAt').textContent = new Date(feed.created_at).toLocaleDateString('ko-KR');
+      document.getElementById('likeCount').textContent = `${feed.likes.length}명`;
+      document.getElementById('commentCount').textContent = `${feed.comments.length}개`;
+
+      const deleteFeedButton = document.getElementById('deleteFeedButton');
+      deleteFeedButton.onclick = () => deleteFeed(feedId);
+
+      const likeButton = document.getElementById('likeButton');
+      likeButton.disabled = false;
+      likeButton.textContent = '좋아요';
+      likeButton.onclick = () => handleLike(feedId);
+
+      document.getElementById('detailModal').classList.remove('hidden');
+    }
+
+    // 피드 상세 모달 닫기
+    document.getElementById('detailCloseModal').addEventListener('click', function() {
+      document.getElementById('detailModal').classList.add('hidden');
+    });
 
     // 프로필 이미지를 클릭했을 때 파일 선택 창 열기
     function handleProfileClick() {
@@ -98,7 +197,6 @@
     // 프로필 이미지 변경
     function handleFileChange(event) {
       const file = event.target.files[0];
-      const userId = document.getElementById('userId').value; // 사용자 ID
 
       if (file) {
         if (!file.type.startsWith('image/')) {
@@ -124,7 +222,7 @@
         .then(data => {
           console.log('서버 응답:', data);
           // 서버에서 반환한 이미지 URL을 프로필 이미지로 설정
-          document.getElementById('profileImage').src = data.imageUrl;
+          location.reload(); // 페이지 새로고침
         })
         .catch(error => {
           console.error('업로드 실패:', error);
@@ -194,8 +292,29 @@
     }
 
     function writePost() {
-      const userId = document.getElementById('userId').value;
-      window.location.href = `/create-feed.html?user_id=${userId}`;
+      window.location.href = '/create-feed.html';
+    }
+
+    function handleLike(feedId) {
+      fetch(`/feed/${feedId}/like`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.message === '좋아요가 추가되었습니다.') {
+          alert('좋아요를 눌렀습니다.');
+          location.reload(); // 페이지 새로고침
+        } else {
+          alert(data.message);
+        }
+      })
+      .catch(error => {
+        console.error('좋아요 처리 중 오류 발생:', error);
+      });
     }
 
     function handleFollow() {
