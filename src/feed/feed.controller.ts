@@ -8,9 +8,9 @@ import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/user/jwt-auth.guard';
 import { User, UserDocument } from 'src/user/schemas/user.schema';
 import { plainToInstance } from 'class-transformer';
-import { FeedDto } from './dto/feed.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UserService } from 'src/user/user.service';
+import { FeedResponseDto } from './dto/feed-response.dto';
 
 @Controller('feed')
 export class FeedController {
@@ -57,7 +57,7 @@ export class FeedController {
 
   @UseGuards(JwtAuthGuard)
   @Get('user')
-  async getUserFeeds(@Req() req: Request, @Query('isMyPage') isMyPage: string, @Query('email') email: string): Promise<FeedDto[]> {
+  async getUserFeeds(@Req() req: Request, @Query('isMyPage') isMyPage: string, @Query('email') email: string): Promise<FeedResponseDto[]> {
     let FindId;
 
     if(isMyPage === 'true'){
@@ -70,11 +70,12 @@ export class FeedController {
 
     const feeds = await this.feedService.findFeedsByUserId(FindId);
 
-    for(let i = 0 ; i < feeds.length ; i++){
-      console.log(feeds[i].comments);
-    }
+    console.log(feeds);
 
-    return plainToInstance(FeedDto, feeds, { excludeExtraneousValues: true });
+    const plainFeeds = feeds.map(f => f.toObject());
+    return plainToInstance(FeedResponseDto, plainFeeds, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @UseGuards(JwtAuthGuard)
@@ -85,6 +86,7 @@ export class FeedController {
     @Req() req,
   ) {
     const user = req.user as UserDocument;
+    createCommentDto.commenter_name = user.profile.name;
     const newComment = await this.feedService.addComment(feedId, user._id.toString(), createCommentDto);
     return { success: true, commenter_name: req.user.username, comment: newComment };
   }
@@ -95,7 +97,9 @@ export class FeedController {
     const user = req.user as UserDocument;
     const userId = user._id.toString();
   
+    console.log(id);
     const feed = await this.feedService.findFeedById(id);
+    console.log(feed);
     if (!feed) {
       return res.status(404).json({ message: '피드를 찾을 수 없습니다.' });
     }

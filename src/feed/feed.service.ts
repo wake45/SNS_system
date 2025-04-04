@@ -18,7 +18,7 @@ export class FeedService {
     return newFeed.save();
   }
 
-  async findFeedsByUserId(userId: string): Promise<Feed[]> {
+  async findFeedsByUserId(userId: string): Promise<FeedDocument[]> {
     return this.feedModel.find({ author_id: userId }).sort({ created_at: -1 }).exec();
   }
 
@@ -31,6 +31,7 @@ export class FeedService {
     const commenterId = new mongoose.Types.ObjectId(userId);
     const newComment = {
       commenter_id: commenterId,
+      commenter_name : createCommentDto.commenter_name,
       comment: createCommentDto.comment,
       commented_at: new Date(),
     };
@@ -41,7 +42,7 @@ export class FeedService {
     return newComment;
   }
 
-  async findFeedById(id: string): Promise<Feed | null> {
+  async findFeedById(id: string): Promise<FeedDocument | null> {
     return this.feedModel.findById(id).exec();
   }  
 

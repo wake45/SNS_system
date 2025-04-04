@@ -3,7 +3,7 @@ import { Document, Types } from 'mongoose';
 
 export type FeedDocument = Feed & Document;
 
-@Schema()
+@Schema({ id: true })
 export class Feed {
   @Prop({ type: Types.ObjectId, required: true })
   author_id: Types.ObjectId;
@@ -24,6 +24,7 @@ export class Feed {
     type: [
       {
         commenter_id: { type: Types.ObjectId, required: true },
+        commenter_name : { type: String, required: true }, 
         comment: { type: String, required: true },
         commented_at: { type: Date, default: Date.now },
       },
@@ -32,6 +33,7 @@ export class Feed {
   })
   comments: {
     commenter_id: Types.ObjectId;
+    commenter_name: string;
     comment: string;
     commented_at: Date;
   }[];
