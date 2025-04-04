@@ -1,7 +1,6 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Req, UseInterceptors, UploadedFile, Res, Delete, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Req, UseInterceptors, UploadedFile, Res, Delete, NotFoundException, ForbiddenException, Query } from '@nestjs/common';
 import { FeedService } from './feed.service';
 import { CreateFeedDto } from './dto/create-feed.dto';
-import { AddCommentDto } from './dto/add-comment.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -10,10 +9,12 @@ import { JwtAuthGuard } from 'src/user/jwt-auth.guard';
 import { User, UserDocument } from 'src/user/schemas/user.schema';
 import { plainToInstance } from 'class-transformer';
 import { FeedDto } from './dto/feed.dto';
+import { CreateCommentDto } from './dto/create-comment.dto';
+import { UserService } from 'src/user/user.service';
 
 @Controller('feed')
 export class FeedController {
-  constructor(private readonly feedService: FeedService) {}
+  constructor(private readonly feedService: FeedService, private readonly userService: UserService) {}
 
   @UseGuards(JwtAuthGuard)
   @Post()
@@ -38,8 +39,7 @@ export class FeedController {
     @Req() req: Request,
     @Res() res: Response
   ) {
-    const user = req.user as UserDocument;
-    console.log(`${user} 피드 생성!`);
+    const user = req.user as UserDocument    
 
     if (!user) {
       return res.status(401).json({ message: '인증된 사용자가 아닙니다.' });
@@ -57,18 +57,36 @@ export class FeedController {
 
   @UseGuards(JwtAuthGuard)
   @Get('user')
-  async getUserFeeds(@Req() req: Request): Promise<FeedDto[]> {
-    const user = req.user as UserDocument;
-    const feeds = await this.feedService.findFeedsByUserId(user._id.toString());
-    console.log(feeds);
+  async getUserFeeds(@Req() req: Request, @Query('isMyPage') isMyPage: string, @Query('email') email: string): Promise<FeedDto[]> {
+    let FindId;
+
+    if(isMyPage === 'true'){
+      const user = req.user as UserDocument;
+      FindId = user._id.toString();
+    } else {
+      let FindUser = await this.userService.findOneByEmail(email);
+      if(FindUser !== null) FindId = FindUser._id.toString();
+    }
+
+    const feeds = await this.feedService.findFeedsByUserId(FindId);
+
+    for(let i = 0 ; i < feeds.length ; i++){
+      console.log(feeds[i].comments);
+    }
+
     return plainToInstance(FeedDto, feeds, { excludeExtraneousValues: true });
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post(':id/comments')
-  async addComment(@Param('id') id: string, @Req() req, @Body() addCommentDto: AddCommentDto) {
-    const commenterId = req.user.userId;
-    return this.feedService.addComment(id, addCommentDto, commenterId);
+  @Post(':id/comment')
+  async addComment(
+    @Param('id') feedId: string,
+    @Body() createCommentDto: CreateCommentDto,
+    @Req() req,
+  ) {
+    const user = req.user as UserDocument;
+    const newComment = await this.feedService.addComment(feedId, user._id.toString(), createCommentDto);
+    return { success: true, commenter_name: req.user.username, comment: newComment };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -99,9 +117,6 @@ export class FeedController {
     if (!feed) {
       throw new NotFoundException('피드를 찾을 수 없습니다.');
     }
-
-    console.log(user._id);
-    console.log(feed.author_id);
 
     if (feed.author_id.toString() !== user._id.toString()) {
       throw new ForbiddenException('이 피드를 삭제할 권한이 없습니다.');

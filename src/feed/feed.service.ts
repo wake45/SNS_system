@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import mongoose, { Model, Types } from 'mongoose';
 import { Feed, FeedDocument } from './schemas/feed.schema';
-import { AddCommentDto } from './dto/add-comment.dto';
+import { CreateCommentDto } from './dto/create-comment.dto';
 
 @Injectable()
 export class FeedService {
@@ -22,20 +22,23 @@ export class FeedService {
     return this.feedModel.find({ author_id: userId }).sort({ created_at: -1 }).exec();
   }
 
-  async addComment(feedId: string, addCommentDto: AddCommentDto, commenterId: string): Promise<Feed | null> {
-    return this.feedModel.findByIdAndUpdate(
-      feedId,
-      {
-        $push: {
-          comments: {
-            commenter_id: new Types.ObjectId(commenterId),
-            comment: addCommentDto.comment,
-            commented_at: new Date(),
-          },
-        },
-      },
-      { new: true },
-    ).exec();
+  async addComment(feedId: string, userId: string, createCommentDto: CreateCommentDto) {
+    const feed = await this.feedModel.findById(feedId);
+    if (!feed) {
+      throw new NotFoundException('피드를 찾을 수 없습니다.');
+    }
+
+    const commenterId = new mongoose.Types.ObjectId(userId);
+    const newComment = {
+      commenter_id: commenterId,
+      comment: createCommentDto.comment,
+      commented_at: new Date(),
+    };
+
+    feed.comments.push(newComment);
+    await feed.save();
+
+    return newComment;
   }
 
   async findFeedById(id: string): Promise<Feed | null> {

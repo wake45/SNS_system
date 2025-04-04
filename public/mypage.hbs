@@ -81,7 +81,9 @@
     <div class="relative top-20 mx-auto p-5 border w-[500px] shadow-lg rounded-md bg-white">
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-lg font-bold text-gray-900">피드</h3>
-        <button id="deleteFeedButton" class="bg-gray-300 px-3 py-1 rounded shadow" onclick="deleteFeed()">삭제</button>
+        {{#if isMyPage}}
+          <button id="deleteFeedButton" class="bg-gray-300 px-3 py-1 rounded shadow" onclick="deleteFeed()">삭제</button>
+        {{/if}}   
       </div>
       <img id="detailModalImage" src="" alt="상세 이미지" class="w-full h-64 object-cover rounded mb-4" />
       <div class="flex justify-around mb-2">
@@ -90,7 +92,7 @@
           <span id="likeCount" class="text-sm text-gray-700"></span>
         </div>
         <div class="flex flex-col items-center">
-          <button class="bg-blue-200 px-4 py-1 rounded-full mb-1" disabled>댓글</button>
+          <button class="bg-blue-200 px-4 py-1 rounded-full mb-1" onclick="openCommentModal()" id="commentButton">댓글</button>
           <span id="commentCount" class="text-sm text-gray-700"></span>
         </div>
       </div>
@@ -106,241 +108,27 @@
     </div>
   </div>
 
+  <!-- 댓글 모달 구조 -->
+  <div id="commentModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-[500px] shadow-lg rounded-md bg-white">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold text-gray-900">댓글</h3>
+        <button id="closeCommentModal" class="text-gray-500 hover:text-gray-700">&times;</button>
+      </div>
+      <div id="commentList" class="max-h-80 overflow-y-auto">
+        <!-- 댓글 목록이 여기에 동적으로 추가됩니다 -->
+      </div>
+      <div class="mt-4">
+        <textarea id="newComment" class="w-full p-2 border rounded-md" placeholder="댓글을 입력하세요" style="color:black"></textarea>
+        <button id="submitComment" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-700">댓글 작성</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    let loadedFeeds = []; // 피드 데이터
-
-    // 모달 요소 가져오기
-    const modal = document.getElementById('modal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalContent = document.getElementById('modalContent');
-
-    // 모달 닫기 버튼 설정
-    const closeModal = document.getElementById('closeModal');
-    closeModal.onclick = function() {
-      modal.style.display = 'none';
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-      fetch('/feed/user')
-        .then(response => response.json())
-        .then(feeds => {
-          loadedFeeds = feeds; // 전역에 저장
-
-          const feedContainer = document.getElementById('feedContainer');
-          feeds.forEach(feed => {
-            const feedItem = document.createElement('div');
-            feedItem.className = 'relative';
-            feedItem.innerHTML = `
-              <img src="${feed.image_url}" alt="피드 이미지" class="w-full h-48 object-cover cursor-pointer" onclick="showDetail('${feed.id}')">
-            `;
-            feedContainer.appendChild(feedItem);
-          });
-        })
-        .catch(error => console.error('피드를 불러오는 중 오류 발생:', error));
-    });
-
-    function deleteFeed(feedId) {
-      fetch(`/feed/${feedId}`, {
-        method: 'DELETE',
-        credentials: 'same-origin'
-      })
-      .then(response => {
-        if (response.ok) {
-          alert('피드가 성공적으로 삭제되었습니다.');
-          location.reload(); // 페이지 새로고침
-        } else {
-          response.json().then(data => {
-            alert(data.message || '피드 삭제 중 오류가 발생했습니다.');
-          });
-        }
-      })
-      .catch(error => {
-        console.error('삭제 요청 중 오류 발생:', error);
-        alert('피드 삭제 중 오류가 발생했습니다.');
-      });
-    };
-
-    function showDetail(feedId) {
-      const feed = loadedFeeds.find(f => f.id === feedId);
-      if (!feed) {
-        console.error('피드를 찾을 수 없습니다:', feedId);
-        return;
-      }
-
-      document.getElementById('detailModalImage').src = feed.image_url;
-      document.getElementById('feedContent').textContent = feed.content;
-      document.getElementById('createdAt').textContent = new Date(feed.created_at).toLocaleDateString('ko-KR');
-      document.getElementById('likeCount').textContent = `${feed.likes.length}명`;
-      document.getElementById('commentCount').textContent = `${feed.comments.length}개`;
-
-      const deleteFeedButton = document.getElementById('deleteFeedButton');
-      deleteFeedButton.onclick = () => deleteFeed(feedId);
-
-      const likeButton = document.getElementById('likeButton');
-      likeButton.disabled = false;
-      likeButton.textContent = '좋아요';
-      likeButton.onclick = () => handleLike(feedId);
-
-      document.getElementById('detailModal').classList.remove('hidden');
-    }
-
-    // 피드 상세 모달 닫기
-    document.getElementById('detailCloseModal').addEventListener('click', function() {
-      document.getElementById('detailModal').classList.add('hidden');
-    });
-
-    // 프로필 이미지를 클릭했을 때 파일 선택 창 열기
-    function handleProfileClick() {
-      document.getElementById('fileInput').click();
-    }
-
-    // 프로필 이미지 변경
-    function handleFileChange(event) {
-      const file = event.target.files[0];
-
-      if (file) {
-        if (!file.type.startsWith('image/')) {
-          alert('이미지 파일을 선택해주세요.');
-          return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          document.getElementById('profileImage').src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-
-        // 서버로 이미지와 사용자 ID를 함께 업로드 요청
-        const formData = new FormData();
-        formData.append('profileImage', file);        
-
-        fetch('/user/upload', {
-          method: 'POST',
-          body: formData,
-        })
-        .then(response => response.json())
-        .then(data => {
-          console.log('서버 응답:', data);
-          // 서버에서 반환한 이미지 URL을 프로필 이미지로 설정
-          location.reload(); // 페이지 새로고침
-        })
-        .catch(error => {
-          console.error('업로드 실패:', error);
-        });
-      }
-    }
-
-    // 팔로워 버튼 클릭 시 호출되는 함수
-    function handleFollowerClick(followerIds) {
-      fetch('/user/get-usernames', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userIds: followerIds }),
-      })
-        .then(response => response.json())
-        .then(data => {
-          if (Array.isArray(data)) {
-            if (data.usernames.length === 0) {
-              displayModal('팔로워 목록', '팔로워가 없습니다.');
-            } else {
-              const content = data.usernames.map(username => `<p>${username}</p>`).join('');
-              displayModal('팔로워 목록', content);
-            }
-          }
-          else {
-            displayModal('팔로워 목록', '팔로워가 없습니다.');
-          }
-        })
-        .catch(error => console.error('팔로워 목록을 불러오는 중 오류 발생:', error));
-    }
-
-    // 팔로잉 버튼 클릭 시 호출되는 함수
-    function handleFollowingClick(followingIds) {
-      fetch('/user/get-usernames', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userIds: followingIds }),
-      })
-        .then(response => response.json())
-        .then(data => {
-          if (Array.isArray(data)) {
-            if (data.usernames.length === 0) {
-              displayModal('팔로잉 목록', '팔로잉하는 사용자가 없습니다.');
-            } else {
-              const content = data.usernames.map(username => `<p>${username}</p>`).join('');
-              displayModal('팔로잉 목록', content);
-            }
-          } else {
-            displayModal('팔로잉 목록', '팔로잉하는 사용자가 없습니다.');
-          }
-        })
-        .catch(error => console.error('팔로잉 목록을 불러오는 중 오류 발생:', error));
-    }
-
-    // 모달 창에 데이터 표시
-    function displayModal(title, content) {
-      const modalTitle = document.getElementById('modalTitle');
-      const modalContent = document.getElementById('modalContent');
-      modalTitle.innerText = title;
-      modalContent.innerHTML = content;
-      const modal = document.getElementById('modal');
-      modal.style.display = 'block';
-    }
-
-    function writePost() {
-      window.location.href = '/create-feed.html';
-    }
-
-    function handleLike(feedId) {
-      fetch(`/feed/${feedId}/like`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.message === '좋아요가 추가되었습니다.') {
-          alert('좋아요를 눌렀습니다.');
-          location.reload(); // 페이지 새로고침
-        } else {
-          alert(data.message);
-        }
-      })
-      .catch(error => {
-        console.error('좋아요 처리 중 오류 발생:', error);
-      });
-    }
-
-    function handleFollow() {
-      alert("팔로우 기능 실행");
-    }
-
-    function startChat() {
-      alert("채팅 시작");
-    }
-
-    function logout() {
-      fetch('/auth/logout', {
-        method: 'POST',
-        credentials: 'same-origin' // 쿠키를 포함하여 요청을 보냅니다.
-      })
-      .then(response => {
-        if (response.redirected) {
-          window.location.href = response.url; // 리디렉션된 URL로 이동
-        } else {
-          alert('로그아웃에 실패했습니다.');
-        }
-      })
-      .catch(error => {
-        console.error('로그아웃 중 오류 발생:', error);
-      });
-    }
+    let isMyPage = {{ isMyPage }};
+    let userEmail = '{{user.email}}';
   </script>
+  <script src="/mypage.js"></script>
 </body>
 </html>

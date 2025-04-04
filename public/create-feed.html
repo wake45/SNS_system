@@ -89,7 +89,7 @@
         });
         if (response.ok) {
           alert('피드 작성에 성공했습니다.');
-          window.history.back();
+          location.reload();
         } else {
           const errorData = await response.json();
           alert(`피드 작성에 실패했습니다: ${errorData.message}`);

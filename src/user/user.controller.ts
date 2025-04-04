@@ -45,7 +45,6 @@ export class UserController {
         @Res() res: Response,
     ) {
         const user = req.user as UserDocument;
-        console.log(user._id.toString());
 
         if (!file) {
             return res.status(400).json({ message: '파일이 업로드되지 않았습니다.' });
@@ -63,7 +62,6 @@ export class UserController {
 
     @Post('get-usernames')
     async getUsernames(@Body('userIds') userIds: string[]): Promise<{ usernames: string[] }> {
-        console.log('팔로우 목록 확인!');
         const users = await this.userService.getUsersByIds(userIds);
         const usernames = users.map(user => user.username);
         return { usernames };

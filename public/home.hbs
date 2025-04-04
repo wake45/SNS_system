@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>홈 화면</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* 이미지 호버 효과 */
+    .feed-image {
+      transition: transform 0.3s ease;
+    }
+    .feed-image:hover {
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4">
+  <!-- 마이페이지로 이동하는 버튼 -->
+  <div class="mb-4">
+    <button onclick="window.location.href='/home/mypage'" class="text-white bg-blue-500 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5">마이페이지</button>
+  </div>
+
+  <div class="mb-4">
+    <input type="email" id="emailInput" placeholder="계정 이메일 검색" required class="p-2 border rounded">
+    <button id="searchButton" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700">검색</button>
+  </div>
+
+  <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-6">
+    <h1 class="text-2xl font-bold mb-4">팔로우한 사용자들의 최신 피드</h1>
+    <div id="feedContainer" class="space-y-6">
+      <!-- 피드 항목들이 동적으로 추가됩니다 -->
+    </div>
+  </div>
+
+  <!-- 피드 상세 모달 -->
+  <div id="detailModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-[500px] shadow-lg rounded-md bg-white">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold text-gray-900">피드</h3>
+        {{#if isMyPage}}
+        <button id="deleteFeedButton" class="bg-gray-300 px-3 py-1 rounded shadow" onclick="deleteFeed()">삭제</button>
+        {{/if}}
+      </div>
+      <img id="detailModalImage" src="" alt="상세 이미지" class="w-full h-64 object-cover rounded mb-4" />
+      <div class="flex justify-around mb-2">
+        <div class="flex flex-col items-center">
+          <button class="bg-blue-200 px-4 py-1 rounded-full mb-1" onclick="handleLike()" id="likeButton">좋아요</button>
+          <span id="likeCount" class="text-sm text-gray-700"></span>
+        </div>
+        <div class="flex flex-col items-center">
+          <button class="bg-blue-200 px-4 py-1 rounded-full mb-1" onclick="openCommentModal()" id="commentButton">댓글</button>
+          <span id="commentCount" class="text-sm text-gray-700"></span>
+        </div>
+      </div>
+      <div class="text-sm text-gray-600 mt-2">
+        <span id="createdAt" class="block text-center"></span>
+      </div>
+      <p id="feedContent" class="mt-4 text-gray-800 text-center"></p>
+      <div class="mt-4">
+        <button id="detailCloseModal" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700">
+          닫기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 댓글 모달 구조 -->
+  <div id="commentModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-[500px] shadow-lg rounded-md bg-white">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold text-gray-900">댓글</h3>
+        <button id="closeCommentModal" class="text-gray-500 hover:text-gray-700">&times;</button>
+      </div>
+      <div id="commentList" class="max-h-80 overflow-y-auto">
+        <!-- 댓글 목록이 여기에 동적으로 추가됩니다 -->
+      </div>
+      <div class="mt-4">
+        <textarea id="newComment" class="w-full p-2 border rounded-md" placeholder="댓글을 입력하세요" style="color:black"></textarea>
+        <button id="submitComment" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-700">댓글 작성</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/home.js"></script>
+</body>
+</html>

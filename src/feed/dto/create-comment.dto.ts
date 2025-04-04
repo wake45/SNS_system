@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 
-export class AddCommentDto {
+export class CreateCommentDto {
   @IsNotEmpty()
   @IsString()
   comment: string;

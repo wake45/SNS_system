@@ -23,9 +23,7 @@ export class AuthController {
 
   @Post('login')
   async login(@Body() createUserDto: CreateUserDto, @Res() res: Response, @Session() session: Record<string, any>) {
-    console.log(createUserDto.email);
     const result = await this.authService.validateUser(createUserDto);
-    console.log(result);
 
     if (result?.accessToken && result?.user) {
       const payload = { sub: result.user._id.toString(), email: result.user.email };
@@ -46,7 +44,6 @@ export class AuthController {
 
   @Post('logout')
   logout(@Res() res: Response) {
-    console.log('로그아웃');
     res.clearCookie('access_token', { httpOnly: true });
     res.redirect('/login.html');
   }
