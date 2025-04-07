@@ -11,20 +11,40 @@ export class HomeController {
 
   @UseGuards(AuthGuard('jwt'))
   @Get()
-  @Render('home')
-  async getHomePage(@Req() req: Request) {
+  @Render('home') // ✅ HTML 템플릿
+  getHomePage() {
+    return {}; // 아무 데이터 안 보내도 됨
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get('feeds')
+  async getFeedData(@Req() req: Request) {
     const user = req.user as UserDocument;
     const feeds = await this.homeService.getFollowingFeeds(user._id.toString());
-    return { feeds }; // 'home.hbs'에서 feeds를 사용할 수 있게 됨
+    
+    return {
+      userEmail: user.email,
+      feeds: feeds,
+    };
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Get('mypage')
   @Render('mypage')
-  renderMyPage(@Req() req: Request, @Res() res: Response) {
+  async renderMyPage(@Req() req: Request, @Res() res: Response) {
     const user = req.user as UserDocument;
 
-    return { user: user, isMyPage: true };
+    const userFind = await this.userService.validateOtherUser(user.email);
+    if (!userFind) {
+      return res.status(404).send('사용자를 찾을 수 없습니다.');
+    }
+
+    return {
+      user: userFind,
+      followingJson: JSON.stringify(userFind.toObject().following || []),
+      followersJson: JSON.stringify(userFind.toObject().followers || []),
+      isMyPage: true
+    };
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -35,12 +55,17 @@ export class HomeController {
       return res.status(400).send('이메일이 제공되지 않았습니다.');
     }
 
-    const user = await this.userService.findOneByEmail(email);
+    const user = await this.userService.validateOtherUser(email);
     if (!user) {
       return res.status(404).send('사용자를 찾을 수 없습니다.');
     }
 
-    return { user: user, isMyPage: false };
+    return {
+      user: user,
+      followingJson: JSON.stringify(user.following || []),
+      followersJson: JSON.stringify(user.followers || []),
+      isMyPage: false
+    };
   }
   
 }

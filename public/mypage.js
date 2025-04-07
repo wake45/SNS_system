@@ -102,7 +102,6 @@ document.addEventListener('DOMContentLoaded', function () {
     fetch(`/feed/user?isMyPage=${isMyPage}&email=${userEmail}`)
         .then(response => response.json())
         .then(feeds => {
-        console.log(feeds);
         loadedFeeds = feeds; // 전역에 저장
 
         const feedContainer = document.getElementById('feedContainer');
@@ -212,62 +211,35 @@ function handleFileChange(event) {
 }
 
 // 팔로워 버튼 클릭 시 호출되는 함수
-function handleFollowerClick(followerIds) {
-    fetch('/user/get-usernames', {
-        method: 'POST',
-        headers: {
-        'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userIds: followerIds }),
-    })
-        .then(response => response.json())
-        .then(data => {
-        if (Array.isArray(data)) {
-            if (data.usernames.length === 0) {
-            displayModal('팔로워 목록', '팔로워가 없습니다.');
-            } else {
-            const content = data.usernames.map(username => `<p>${username}</p>`).join('');
-            displayModal('팔로워 목록', content);
-            }
-        }
-        else {
-            displayModal('팔로워 목록', '팔로워가 없습니다.');
-        }
-        })
-        .catch(error => console.error('팔로워 목록을 불러오는 중 오류 발생:', error));
+function handleFollowerClick() {
+    displayModal(userFollowers);
 }
 
 // 팔로잉 버튼 클릭 시 호출되는 함수
-function handleFollowingClick(followingIds) {
-    fetch('/user/get-usernames', {
-        method: 'POST',
-        headers: {
-        'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userIds: followingIds }),
-    })
-        .then(response => response.json())
-        .then(data => {
-        if (Array.isArray(data)) {
-            if (data.usernames.length === 0) {
-            displayModal('팔로잉 목록', '팔로잉하는 사용자가 없습니다.');
-            } else {
-            const content = data.usernames.map(username => `<p>${username}</p>`).join('');
-            displayModal('팔로잉 목록', content);
-            }
-        } else {
-            displayModal('팔로잉 목록', '팔로잉하는 사용자가 없습니다.');
-        }
-        })
-        .catch(error => console.error('팔로잉 목록을 불러오는 중 오류 발생:', error));
+function handleFollowingClick() {
+    displayModal(userFollowing);
 }
 
 // 모달 창에 데이터 표시
-function displayModal(title, content) {
+function displayModal(content) {
     const modalTitle = document.getElementById('modalTitle');
     const modalContent = document.getElementById('modalContent');
-    modalTitle.innerText = title;
-    modalContent.innerHTML = content;
+    modalTitle.innerText = '팔로잉 목록';
+    
+    if (content.length === 0) {
+        modalContent.innerHTML = '<p>팔로워가 없습니다.</p>';
+    } else {
+    // 팔로워 목록 생성
+        const list = document.createElement('ul');
+        content.forEach(follow => {
+            const listItem = document.createElement('li');
+            listItem.textContent = follow.email;
+            list.appendChild(listItem);
+        });
+        modalContent.innerHTML = ''; // 기존 내용 초기화
+        modalContent.appendChild(list);
+    }
+
     const modal = document.getElementById('modal');
     modal.style.display = 'block';
 }
@@ -283,6 +255,9 @@ function handleLike(feedId) {
         'Content-Type': 'application/json',
         },
         credentials: 'include',
+        body: JSON.stringify({
+            userEmail: userEmail, // ← 전역 변수로 선언되어 있다고 가정
+        }),
     })
     .then(response => response.json())
     .then(data => {
@@ -302,9 +277,41 @@ function goHome() {
     window.location.href = '/home';
 }
 
-function handleFollow() {
-    alert("팔로우 기능 실행");
-}
+async function handleFollow() {
+    try {
+      const response = await fetch(`/user/follow/${userEmail}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+  
+      if (!response.ok) {
+        throw new Error('팔로우 요청 실패');
+      }
+  
+      const result = await response.json();
+      const { user, message } = result;
+      alert('팔로우 하였습니다.');
+  
+      // 팔로우 수 갱신
+      const followerCountSpan = document.getElementById('followerCount');
+      const currentCount = parseInt(followerCountSpan.textContent);
+      followerCountSpan.textContent = currentCount + 1;
+
+      userFollowers.push({ _id: user._id, email: user.email});
+  
+      // 버튼 텍스트 변경 (예: 언팔로우 기능 추가 시 대비)
+      const button = document.getElementById('writeOrFollowButton');
+      if (button) {
+        button.textContent = '팔로우 완료';
+        button.disabled = true;
+      }
+    } catch (error) {
+      console.error('팔로우 중 오류 발생:', error);
+      alert('팔로우에 실패했습니다.');
+    }
+  }
 
 function startChat() {
     alert("채팅 시작");

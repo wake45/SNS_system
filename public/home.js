@@ -1,4 +1,5 @@
 let loadedHomeFeeds = []; // 피드 데이터
+let sendEmail = '';
 
 // 댓글 모달 요소 가져오기
 const commentHomeModal = document.getElementById('commentModal');
@@ -12,7 +13,7 @@ let currentHomeFeedId = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-      const response = await fetch('/home', {
+      const response = await fetch('/home/feeds', {
         method: 'GET',
         credentials: 'include',
       });
@@ -21,19 +22,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         throw new Error('Failed to fetch feeds');
       }
   
-      const feeds = await response.json();
+      const result  = await response.json();
+      const { userEmail, feeds } = result;
       const feedContainer = document.getElementById('feedContainer');
-  
+
+      sendEmail = userEmail;
+      loadedHomeFeeds = feeds;
       feeds.forEach(feed => {
-        const feedElement = document.createElement('div');
-        feedElement.className = 'feed-item';
-        feedElement.innerHTML = `
-          <h3>${feed.author_name}</h3>
-          <p>${feed.content}</p>
-          ${feed.image_url ? `<img src="${feed.image_url}" alt="Feed image">` : ''}
-          <span>${new Date(feed.created_at).toLocaleString()}</span>
-        `;
-        feedContainer.appendChild(feedElement);
+        const feedItem = document.createElement('div');
+        feedItem.className = 'relative';
+        feedItem.innerHTML = `<img src="${feed.image_url}" alt="피드 이미지" class="w-full h-48 object-cover cursor-pointer" onclick="showDetail('${feed._id}')">`;
+        feedContainer.appendChild(feedItem);
       });
     } catch (error) {
       console.error('Error loading feeds:', error);
@@ -58,7 +57,7 @@ closeHomeCommentModal.onclick = function() {
 
 // 댓글 목록 로딩 함수
 function loadComments(feedId) {
-  const feed = loadedFeeds.find(f => f.id === feedId);
+  const feed = loadedHomeFeeds.find(f => f._id === feedId);
   if (!feed) {
     console.error('피드를 찾을 수 없습니다:', feedId);
     return;
@@ -91,14 +90,14 @@ homeSubmitComment.onclick = function() {
       'Content-Type': 'application/json',
     },
     credentials: 'include',
-    body: JSON.stringify({ comment: commentText }),
+    body: JSON.stringify({ comment: commentText, userEmail: sendEmail, }),
   })
   .then(response => response.json())
   .then(data => {
     if (data.success) {
       alert('댓글이 성공적으로 추가되었습니다.');
       // 클라이언트 측에서 즉시 댓글 목록 갱신
-      const feed = loadedFeeds.find(f => f.id === currentHomeFeedId);
+      const feed = loadedHomeFeeds.find(f => f._id === currentHomeFeedId);
       if (feed) {
         feed.comments.push({
           commenter_name: data.commenter_name, // 서버에서 반환한 댓글 작성자 이름
@@ -140,7 +139,7 @@ function deleteFeed(feedId) {
 };
 
 function showDetail(feedId) {
-    const feed = loadedFeeds.find(f => f.id === feedId);
+    const feed = loadedHomeFeeds.find(f => f._id === feedId);
     if (!feed) {
         console.error('피드를 찾을 수 없습니다:', feedId);
         return;
@@ -151,9 +150,6 @@ function showDetail(feedId) {
     document.getElementById('createdAt').textContent = new Date(feed.created_at).toLocaleDateString('ko-KR');
     document.getElementById('likeCount').textContent = `${feed.likes.length}명`;
     document.getElementById('commentCount').textContent = `${feed.comments.length}개`;
-
-    const deleteFeedButton = document.getElementById('deleteFeedButton');
-    deleteFeedButton.onclick = () => deleteFeed(feedId);
 
     const commentButton = document.getElementById('commentButton');
     commentButton.onclick = () => openCommentModal(feedId);
@@ -188,6 +184,9 @@ function handleLike(feedId) {
         'Content-Type': 'application/json',
         },
         credentials: 'include',
+        body: JSON.stringify({
+          userEmail: sendEmail, // ← 전역 변수로 선언되어 있다고 가정
+        }),
     })
     .then(response => response.json())
     .then(data => {
@@ -203,26 +202,11 @@ function handleLike(feedId) {
     });
 }
 
-document.getElementById('searchButton').addEventListener('click', function() {
-    const email = document.getElementById('emailInput').value.trim();
-    if (email) {
-      fetch(`/home/profile?email=${encodeURIComponent(email)}`)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('네트워크 응답이 올바르지 않습니다.');
-          }
-          return response.text();
-        })
-        .then(html => {
-          document.open();
-          document.write(html);
-          document.close();
-        })
-        .catch(error => {
-          console.error('데이터를 가져오는 중 문제가 발생했습니다:', error);
-        });
-    } else {
-      alert('이메일을 입력하세요.');
-    }
-  });
-  
+document.getElementById('searchButton').addEventListener('click', function () {
+  const email = document.getElementById('emailInput').value.trim();
+  if (email) {
+    window.location.href = `/home/profile?email=${encodeURIComponent(email)}`;
+  } else {
+    alert('이메일을 입력하세요.');
+  }
+});

@@ -45,22 +45,30 @@
 
   <!-- 피드 상세 모달 -->
   <div id="detailModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-    <div class="relative top-20 mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
+    <div class="relative top-20 mx-auto p-5 border w-[500px] shadow-lg rounded-md bg-white">
       <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-bold text-gray-900">피드 상세</h3>
-        <button id="deleteFeedButton" class="bg-red-500 text-white px-3 py-1 rounded shadow" onclick="deleteFeed()">삭제</button>
+        <h3 class="text-lg font-bold text-gray-900">피드</h3>
+        {{#if isMyPage}}
+          <button id="deleteFeedButton" class="bg-gray-300 px-3 py-1 rounded shadow" onclick="deleteFeed()">삭제</button>
+        {{/if}}   
       </div>
       <img id="detailModalImage" src="" alt="상세 이미지" class="w-full h-64 object-cover rounded mb-4" />
+      <div class="flex justify-around mb-2">
+        <div class="flex flex-col items-center">
+          <button class="bg-blue-200 px-4 py-1 rounded-full mb-1" onclick="handleLike()" id="likeButton">좋아요</button>
+          <span id="likeCount" class="text-sm text-gray-700"></span>
+        </div>
+        <div class="flex flex-col items-center">
+          <button class="bg-blue-200 px-4 py-1 rounded-full mb-1" onclick="openCommentModal()" id="commentButton">댓글</button>
+          <span id="commentCount" class="text-sm text-gray-700"></span>
+        </div>
+      </div>
       <div class="text-sm text-gray-600 mt-2">
         <span id="createdAt" class="block text-center"></span>
       </div>
       <p id="feedContent" class="mt-4 text-gray-800 text-center"></p>
-      <div class="flex justify-around mt-4">
-        <button class="bg-blue-500 text-white px-4 py-2 rounded" onclick="handleLike()" id="likeButton">좋아요</button>
-        <button class="bg-blue-500 text-white px-4 py-2 rounded" onclick="openCommentModal()" id="commentButton">댓글</button>
-      </div>
       <div class="mt-4">
-        <button id="detailCloseModal" class="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-700">
+        <button id="detailCloseModal" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700">
           닫기
         </button>
       </div>

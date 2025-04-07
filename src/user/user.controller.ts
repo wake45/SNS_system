@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Res, UseInterceptors, UploadedFile, Req, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Res, UseInterceptors, UploadedFile, Req, UseGuards, Param } from '@nestjs/common';
 import { UserService } from './user.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -65,5 +65,15 @@ export class UserController {
         const users = await this.userService.getUsersByIds(userIds);
         const usernames = users.map(user => user.username);
         return { usernames };
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('follow/:userEmail')
+    async follow(@Param('userEmail') targetUserEmail: string, @Req() req: Request) {
+      const currentUser = req.user as UserDocument;
+      const userFind = await this.userService.followUser(currentUser._id.toString(), targetUserEmail);
+      return { 
+        user: userFind,
+        message: '팔로우 완료' };
     }
 }

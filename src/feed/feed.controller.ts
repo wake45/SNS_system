@@ -11,6 +11,7 @@ import { plainToInstance } from 'class-transformer';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UserService } from 'src/user/user.service';
 import { FeedResponseDto } from './dto/feed-response.dto';
+import { Types } from 'mongoose';
 
 @Controller('feed')
 export class FeedController {
@@ -70,8 +71,6 @@ export class FeedController {
 
     const feeds = await this.feedService.findFeedsByUserId(FindId);
 
-    console.log(feeds);
-
     const plainFeeds = feeds.map(f => f.toObject());
     return plainToInstance(FeedResponseDto, plainFeeds, {
       excludeExtraneousValues: true,
@@ -91,24 +90,22 @@ export class FeedController {
     return { success: true, commenter_name: req.user.username, comment: newComment };
   }
 
-  @UseGuards(JwtAuthGuard)
   @Post(':id/like')
-  async likeFeed(@Param('id') id: string, @Req() req: Request, @Res() res: Response) {
-    const user = req.user as UserDocument;
-    const userId = user._id.toString();
-  
-    console.log(id);
+  async likeFeed(@Param('id') id: string, @Body('userEmail') userEmail: string, @Req() req: Request, @Res() res: Response) {  
     const feed = await this.feedService.findFeedById(id);
-    console.log(feed);
+    const user = await this.userService.findOneByEmail(userEmail);
+
     if (!feed) {
       return res.status(404).json({ message: '피드를 찾을 수 없습니다.' });
     }
   
-    if (feed.likes.includes(user._id)) {
-      return res.status(400).json({ message: '이미 좋아요를 눌렀습니다.' });
+    if (user != null) {
+      if (feed.likes.includes(user._id)) {
+        return res.status(400).json({ message: '이미 좋아요를 눌렀습니다.' });
+      }
+    
+      await this.feedService.addLikeToFeed(id, user._id.toString());
     }
-  
-    await this.feedService.addLikeToFeed(id, userId);
     return res.status(200).json({ message: '좋아요가 추가되었습니다.' });
   }
 

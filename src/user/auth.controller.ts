@@ -35,6 +35,8 @@ export class AuthController {
 
       return res.render('mypage', {
         user: result.user,
+        followingJson: JSON.stringify(result.user.following || []),
+        followersJson: JSON.stringify(result.user.followers || []),
         isMyPage: isMyPage,
       });
     }

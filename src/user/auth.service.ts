@@ -27,20 +27,22 @@ export class AuthService {
   }
 
   async validateUser(createUserDto: CreateUserDto): Promise<{ accessToken: string; user: UserResponseDto }> {
-    let userFind: UserDocument | null = await this.userService.findOneByEmail(createUserDto.email); //계정 검색
-    if(!userFind) {
+    const userFind = await this.userService.findOneByEmail(createUserDto.email) as UserDocument;
+  
+    if (!userFind) {
       throw new UnauthorizedException("계정이 존재하지 않습니다.");
     }
-
-    const validatePassword = await bcrypt.compare(createUserDto.password, userFind.password); //비밀번호 검증
-    if(!validatePassword) {
+  
+    await (await userFind.populate('following', 'email')).populate('followers', 'email');
+  
+    const validatePassword = await bcrypt.compare(createUserDto.password, userFind.password);
+    if (!validatePassword) {
       throw new UnauthorizedException("패스워드가 일치하지 않습니다.");
     }
-
+  
     const payload = { email: userFind.email, sub: userFind._id };
     const accessToken = this.jwtService.sign(payload);
-
-    // 비밀번호 필드를 제외한 사용자 정보를 DTO로 변환
+  
     const { password, ...userWithoutPassword } = userFind.toObject();
     const userResponse = new UserResponseDto(
       userWithoutPassword.email,
@@ -50,7 +52,7 @@ export class AuthService {
       userWithoutPassword.following,
       userWithoutPassword._id,
     );
-
-    return { accessToken, user: userResponse }; // 인가 토큰 발행
+  
+    return { accessToken, user: userResponse };
   }
 }
