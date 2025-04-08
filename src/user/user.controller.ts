@@ -60,12 +60,15 @@ export class UserController {
         }
     }
 
+    /*
+    @UseGuards(JwtAuthGuard)
     @Post('get-usernames')
     async getUsernames(@Body('userIds') userIds: string[]): Promise<{ usernames: string[] }> {
         const users = await this.userService.getUsersByIds(userIds);
         const usernames = users.map(user => user.username);
         return { usernames };
     }
+    */
 
     @UseGuards(JwtAuthGuard)
     @Post('follow/:userEmail')

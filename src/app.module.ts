@@ -9,6 +9,7 @@ import { AppService } from './app.service';
 import { FeedController } from './feed/feed.controller';
 import { FeedModule } from './feed/feed.module';
 import { HomeModule } from './home/home.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { HomeModule } from './home/home.module';
     AuthModule,
     FeedModule,
     HomeModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],

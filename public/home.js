@@ -184,9 +184,6 @@ function handleLike(feedId) {
         'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({
-          userEmail: sendEmail, // ← 전역 변수로 선언되어 있다고 가정
-        }),
     })
     .then(response => response.json())
     .then(data => {

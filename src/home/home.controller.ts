@@ -50,20 +50,28 @@ export class HomeController {
   @UseGuards(AuthGuard('jwt'))
   @Get('profile')
   @Render('mypage')
-  async renderUserProfile(@Query('email') email: string, @Res() res) {
+  async renderUserProfile(@Query('email') email: string, @Req() req: Request, @Res() res) {
+    const user = req.user as UserDocument;
+
+    if (email === user.email) {
+      return this.renderMyPage(req, res);
+    }
+
     if (!email) {
       return res.status(400).send('이메일이 제공되지 않았습니다.');
     }
+    
+    
 
-    const user = await this.userService.validateOtherUser(email);
-    if (!user) {
+    const userFind = await this.userService.validateOtherUser(email);
+    if (!userFind) {
       return res.status(404).send('사용자를 찾을 수 없습니다.');
     }
 
     return {
-      user: user,
-      followingJson: JSON.stringify(user.following || []),
-      followersJson: JSON.stringify(user.followers || []),
+      user: userFind,
+      followingJson: JSON.stringify(userFind.following || []),
+      followersJson: JSON.stringify(userFind.followers || []),
       isMyPage: false
     };
   }

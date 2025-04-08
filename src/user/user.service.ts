@@ -47,6 +47,10 @@ export class UserService {
     return this.userModel.find({ _id: { $in: userIds } }).select('username').exec();
   }
 
+  async findUserById(id: string): Promise<UserDocument | null> {
+    return this.userModel.findById(id).exec();
+  }  
+
   async followUser(currentUserId: string, targetUserEmail: string): Promise<UserDocument> {
     const [currentUser, targetUser] = await Promise.all([
       this.userModel.findById(currentUserId),
@@ -70,6 +74,8 @@ export class UserService {
       targetUser.followers.push(currentUser._id);
   
       await Promise.all([currentUser.save(), targetUser.save()]);
+    } else {
+      throw new BadRequestException('이미 팔로우한 사용자입니다.');
     }
 
     return currentUser;

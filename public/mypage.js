@@ -255,9 +255,6 @@ function handleLike(feedId) {
         'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({
-            userEmail: userEmail, // ← 전역 변수로 선언되어 있다고 가정
-        }),
     })
     .then(response => response.json())
     .then(data => {
@@ -278,43 +275,60 @@ function goHome() {
 }
 
 async function handleFollow() {
-    try {
-      const response = await fetch(`/user/follow/${userEmail}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-  
-      if (!response.ok) {
-        throw new Error('팔로우 요청 실패');
-      }
-  
-      const result = await response.json();
-      const { user, message } = result;
-      alert('팔로우 하였습니다.');
-  
-      // 팔로우 수 갱신
-      const followerCountSpan = document.getElementById('followerCount');
-      const currentCount = parseInt(followerCountSpan.textContent);
-      followerCountSpan.textContent = currentCount + 1;
+  try {
+    const response = await fetch(`/user/follow/${userEmail}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
 
-      userFollowers.push({ _id: user._id, email: user.email});
-  
-      // 버튼 텍스트 변경 (예: 언팔로우 기능 추가 시 대비)
-      const button = document.getElementById('writeOrFollowButton');
-      if (button) {
-        button.textContent = '팔로우 완료';
-        button.disabled = true;
-      }
-    } catch (error) {
-      console.error('팔로우 중 오류 발생:', error);
-      alert('팔로우에 실패했습니다.');
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || '팔로우 요청 실패');
     }
-  }
 
-function startChat() {
-    alert("채팅 시작");
+    const result = await response.json();
+    alert('팔로우 하였습니다.');
+
+    // 팔로우 수 갱신
+    const followerCountSpan = document.getElementById('followerCount');
+    const currentCount = parseInt(followerCountSpan.textContent);
+    followerCountSpan.textContent = currentCount + 1;
+
+    userFollowers.push({ _id: result.user._id, email: result.user.email });
+
+    // 버튼 텍스트 변경
+    const button = document.getElementById('writeOrFollowButton');
+    if (button) {
+      button.textContent = '팔로우 완료';
+      button.disabled = true;
+    }
+  } catch (error) {
+    console.error('팔로우 중 오류 발생:', error);
+    alert(error.message);
+  }
+}
+
+async function startChat() {
+  try {
+    const response = await fetch(`/chats/initiate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userEmail }),
+    });
+
+    if (response.ok) {
+      const { chatId } = await response.json();
+      window.location.href = `/chats/${chatId}`;
+    } else {
+      console.error('채팅을 시작할 수 없습니다.');
+    }
+  } catch (error) {
+    console.error('오류 발생:', error);
+  }
 }
 
 function logout() {

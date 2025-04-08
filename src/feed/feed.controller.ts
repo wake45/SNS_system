@@ -6,12 +6,11 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/user/jwt-auth.guard';
-import { User, UserDocument } from 'src/user/schemas/user.schema';
+import { UserDocument } from 'src/user/schemas/user.schema';
 import { plainToInstance } from 'class-transformer';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UserService } from 'src/user/user.service';
 import { FeedResponseDto } from './dto/feed-response.dto';
-import { Types } from 'mongoose';
 
 @Controller('feed')
 export class FeedController {
@@ -90,10 +89,11 @@ export class FeedController {
     return { success: true, commenter_name: req.user.username, comment: newComment };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post(':id/like')
-  async likeFeed(@Param('id') id: string, @Body('userEmail') userEmail: string, @Req() req: Request, @Res() res: Response) {  
+  async likeFeed(@Param('id') id: string, @Req() req: Request, @Res() res: Response) {  
     const feed = await this.feedService.findFeedById(id);
-    const user = await this.userService.findOneByEmail(userEmail);
+    const user = req.user as UserDocument;
 
     if (!feed) {
       return res.status(404).json({ message: '피드를 찾을 수 없습니다.' });
